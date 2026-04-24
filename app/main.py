@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from app.api.v1 import chat
-# from app.api.v1 import oss
+from app.api.v1 import oss
 from app.common.logger import setup_logging
 import os
 load_dotenv()
@@ -17,7 +17,7 @@ app = FastAPI(
 )
 
 app.include_router(chat.router, prefix="/api/v1", tags=["对话"])
-# app.include_router(oss.router, prefix="/api/v1", tags=["申请上传签名url"])
+app.include_router(oss.router, prefix="/api/v1", tags=["申请上传签名url"])
 
 
 @app.get("/")
