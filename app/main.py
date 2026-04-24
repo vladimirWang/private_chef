@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.api.v1 import chat
 from app.api.v1 import oss
@@ -14,6 +15,15 @@ app = FastAPI(
     title="Private Chef API",
     description="AI 私人厨师",
     version="0.1.0"
+)
+
+# 仅允许来自 139.224.68.145 的跨域请求（支持 http/https，支持任意端口）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"^https?://139\.224\.68\.145(?::\d+)?$",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(chat.router, prefix="/api/v1", tags=["对话"])
