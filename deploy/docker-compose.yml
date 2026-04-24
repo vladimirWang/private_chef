@@ -1,10 +1,13 @@
 services:
   web:
     build:
-      # 这里假设前端代码在服务器上与后端同级目录：../private_chef_client
+      # 以本 docker-compose.yml 所在目录（deploy/）为基准：
+      # 若服务器目录形如：
+      #   /root/private_chef/deploy/docker-compose.yml
+      #   /root/private_chef_client/...
+      # 则前端项目应为 ../../private_chef_client
       # 如你的服务器目录不同，把 context 改成前端项目所在路径即可
-      context: ../private_chef_client
-      dockerfile: deploy/nginx/Dockerfile
+      context: ./nginx
     ports:
       # 避免与服务器上已有项目冲突，默认暴露到 8080
       - "8080:80"
@@ -13,10 +16,11 @@ services:
 
   api:
     build:
-      context: .
+      # api 的构建上下文应为后端项目根目录（deploy/ 的上一级）
+      context: ..
       dockerfile: deploy/Dockerfile
     env_file:
-      - .env.prod
+      - ../.env.prod
     expose:
       - "8000"
 
