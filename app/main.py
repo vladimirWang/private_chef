@@ -17,11 +17,12 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# 仅允许来自 139.224.68.145 的跨域请求（支持 http/https，支持任意端口）
+# 临时放开：允许任意来源跨域访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"^https?://139\.224\.68\.145(?::\d+)?$",
-    allow_credentials=True,
+    allow_origins=["*"],
+    # 允许任意来源时不能开启 credentials（浏览器会拒绝 Access-Control-Allow-Origin: * + credentials）
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
