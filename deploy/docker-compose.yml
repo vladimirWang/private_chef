@@ -7,7 +7,8 @@ services:
       #   /root/private_chef_client/...
       # 则前端项目应为 ../../private_chef_client
       # 如你的服务器目录不同，把 context 改成前端项目所在路径即可
-      context: ./nginx
+      context: ../../private_chef_client
+      dockerfile: deploy/nginx/Dockerfile
     ports:
       # 避免与服务器上已有项目冲突，默认暴露到 8080
       - "8080:80"
