@@ -59,18 +59,21 @@ async def search_recipes(prompt: str, image: str, thread_id: str):
     try:
         # 判断是否有图片
         if not image or image.strip() == "":
+            logger.info(f"没有图片，直接调用agent")
             message = HumanMessage(content=prompt)
         else:
+            logger.info(f"有图片，调用agent")
             message=HumanMessage(content=[
                 {"type": "image", "url": image},
                 {"type": "text", "text": prompt}
             ])
         # 流式调用agent
         for chunk, metadata in agent.stream(
-            {"message": [message]},
+            {"messages": [message]},
             {"configurable": {"thread_id": thread_id}},
             stream_mode="messages"
         ):
+            logger.info(f"chunk.content: {chunk.content}, metadata: {metadata}")
             if isinstance(chunk, AIMessageChunk) and chunk.content:
                 yield chunk.content
     except Exception as e:
