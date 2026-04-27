@@ -7,7 +7,8 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
 from langchain.agents import create_agent
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, AIMessageChunk
+from app.common.logger import logger
 
 load_dotenv()
 
@@ -49,3 +50,56 @@ agent = create_agent(
     system_prompt=system_prompt,
     checkpointer=checkpointer
 )
+
+async def search_recipes(prompt: str, image: str, thread_id: str):
+    logger.info(f"[用户]: {prompt}, image: {image}, thread_id: {thread_id}")
+    try:
+        # 判断是否有图片
+        if not image or image.strip() == "":
+            message = HumanMessage(content=prompt)
+        else:
+            message=HumanMessage(content=[
+                {"type": "image", "url": image},
+                {"type": "text", "text": prompt}
+            ])
+        # 流式调用agent
+        for chunk, metadata in agent.stream(
+            {"message": [message]},
+            {"configurable": {"thread_id": thread_id}},
+            stream_mode="messages"
+        ):
+            if isinstance(chunk, AIMessageChunk) and chunk.content:
+                yield chunk.content
+    except Exception as e:
+        logger.error(f"\n[错误]: {str(e)}")
+        yield "信息检索失败, 试试着手动输入食物列表"
+
+
+def clear_message(thread_id: str):
+    logger.info(f"清空历史消息, thread_id: {thread_id}")
+    checkpointer.delete_thread(thread_id)
+
+def get_message(thread_id: str) -> list[dict[str, str]]:
+    """获取会话历史"""
+    """根据thread_id查询checkpoint"""
+    cp = checkpointer.get({"configurable": {"thread_id": thread_id}})
+    if not cp:
+        return []
+    """安全获取messages"""
+    channel_values = cp.get("channel_values")
+    if not channel_values:
+        return []
+    messages = channel_values.get("messages", [])
+    if not messages:
+        return []
+    
+    # 转换消息格式
+    result = []
+    for msg in messages:
+        if not msg.content:
+            continue
+        if isinstance(msg, HumanMessage):
+            result.append({"role": "user", "content": msg.content})
+        elif isinstance(msg, AIMessage):
+            result.append({"role": "assistant", "content": msg.content})
+    return result;
