@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from langchain.chat_models import init_chat_model
 from dotenv import load_dotenv
 import os
@@ -6,7 +8,6 @@ from langchain_tavily import TavilySearch
 from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
-from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage, AIMessage, AIMessageChunk
 from app.common.logger import logger
 
@@ -20,8 +21,10 @@ model = init_chat_model(
     base_url=os.getenv("DASHSCOPE_BASE_URL"),
 )
 
-# 初始化checkpointer
-connection = sqlite3.connect("resources/private_chef.db", check_same_thread=False)
+# 初始化 checkpointer：路径相对项目根目录，不依赖当前工作目录
+_db_path = Path(__file__).resolve().parents[2] / "db" / "private_chef.db"
+_db_path.parent.mkdir(parents=True, exist_ok=True)
+connection = sqlite3.connect(str(_db_path), check_same_thread=False)
 checkpointer= SqliteSaver(connection)
 checkpointer.setup()
 
@@ -75,11 +78,11 @@ async def search_recipes(prompt: str, image: str, thread_id: str):
         yield "信息检索失败, 试试着手动输入食物列表"
 
 
-def clear_message(thread_id: str):
+def clear_messages(thread_id: str):
     logger.info(f"清空历史消息, thread_id: {thread_id}")
     checkpointer.delete_thread(thread_id)
 
-def get_message(thread_id: str) -> list[dict[str, str]]:
+def get_messages(thread_id: str) -> list[dict[str, str]]:
     """获取会话历史"""
     """根据thread_id查询checkpoint"""
     cp = checkpointer.get({"configurable": {"thread_id": thread_id}})

@@ -1,57 +1,68 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app.agents.private_chef import get_messages, clear_messages, search_recipes
 from app.models.schemas import ChatRequest
-from app.services.chat_service import (
-    append_assistant_message,
-    append_user_message,
-    clear_messages,
-    get_messages,
-    mock_markdown_answer,
-    text_stream,
-)
+# from app.services.chat_service import (
+#     append_assistant_message,
+#     append_user_message,
+#     # clear_messages,
+#     # get_messages,
+#     mock_markdown_answer,
+#     text_stream,
+# )
 
 router = APIRouter()
 
 
 @router.post("/chat/stream")
 async def chat_endpoint(request: ChatRequest):
-    """流式对话（mock）"""
-    if not request.thread_id:
-        raise HTTPException(status_code=400, detail="thread_id 不能为空")
+    # """流式对话（mock）"""
+    # if not request.thread_id:
+    #     raise HTTPException(status_code=400, detail="thread_id 不能为空")
 
-    await append_user_message(request.thread_id, request.message, request.image_url)
+    # await append_user_message(request.thread_id, request.message, request.image_url)
 
-    answer = mock_markdown_answer(request.message, request.image_url)
+    # answer = mock_markdown_answer(request.message, request.image_url)
 
-    async def streamer():
-        collected: list[str] = []
-        async for chunk in text_stream(answer):
-            collected.append(chunk)
-            yield chunk
+    # async def streamer():
+    #     collected: list[str] = []
+    #     async for chunk in text_stream(answer):
+    #         collected.append(chunk)
+    #         yield chunk
 
-        await append_assistant_message(request.thread_id, "".join(collected))
+    #     await append_assistant_message(request.thread_id, "".join(collected))
 
-    return StreamingResponse(streamer(), media_type="text/plain; charset=utf-8")
+    # return StreamingResponse(streamer(), media_type="text/plain; charset=utf-8")
+    # 流失对话（真实调用）
+    return StreamingResponse(
+        search_recipes(request.message, request.image_url, request.thread_id),
+        media_type="text/event-stream"
+    )
 
 
 @router.get("/chat/messages")
 async def get_chat_messages(thread_id: str):
-    """获取历史消息（mock）"""
-    if not thread_id:
-        raise HTTPException(status_code=400, detail="thread_id 不能为空")
+    # """获取历史消息（mock）"""
+    # if not thread_id:
+    #     raise HTTPException(status_code=400, detail="thread_id 不能为空")
 
-    messages = await get_messages(thread_id)
+    # messages = await get_messages(thread_id)
 
-    return JSONResponse(content={"messages": messages})
+    # return JSONResponse(content={"messages": messages})
+    messages = get_messages(thread_id)
+    return {"messages": messages}
 
 
 @router.delete("/chat/messages")
 async def clear_chat_messages(thread_id: str):
-    """清空历史消息（mock）"""
-    if not thread_id:
-        raise HTTPException(status_code=400, detail="thread_id 不能为空")
+    # """清空历史消息（mock）"""
+    # if not thread_id:
+    #     raise HTTPException(status_code=400, detail="thread_id 不能为空")
 
-    await clear_messages(thread_id)
+    # await clear_messages(thread_id)
 
-    return JSONResponse(content={"ok": True})
+    # return JSONResponse(content={"ok": True})
+    # 清空历史消息
+    clear_messages(thread_id)
+    return {"success": True}
